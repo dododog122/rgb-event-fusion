@@ -24,23 +24,24 @@ Unlike prior methods that convert event data into image overlays, V_mp injects e
 ## Method: V_mp Architecture
 
 ### Membrane Potential Accumulation
-\`\`\`python
+```python
 V_pos(t) = V_pos(t-1) * 0.9 + max(event(t),  0)
 V_neg(t) = V_neg(t-1) * 0.9 + max(-event(t), 0)
-\`\`\`
+```
 Inspired by the **Leaky Integrate-and-Fire (LIF)** neuron model. DVS hardware itself is designed to mimic retinal ganglion cells, so processing its output with the same biological logic is physically motivated.
 
 ### Fusion Flow
-\`\`\`
 RGB Image ──► YOLOv8 Backbone ──► P3 (80×80) ──► MAF ──► FPN/PAN ──► Detection
-                                   P4 (40×40) ──► MAF ──►
-                                        ▲
-DVS Events ──► Membrane CNN Encoder ────┘
-               (V_pos, V_neg → feature maps)
-\`\`\`
 
+P4 (40×40) ──► MAF ──►
+
+▲
+
+DVS Events ──► Membrane CNN Encoder ────┘
+
+(V_pos, V_neg → feature maps)
 **MembraneAdaptiveFusion (MAF):**
-- Illumination gate: \`σ(Linear(AvgPool(RGB_feat)))\` — auto-weights event vs RGB by brightness
+- Illumination gate: `σ(Linear(AvgPool(RGB_feat)))` — auto-weights event vs RGB by brightness
 - Channel attention: selects informative fused channels
 - Residual connection: guarantees floor ≥ RGB-only (safety guarantee)
 
@@ -57,67 +58,77 @@ DVS Events ──► Membrane CNN Encoder ────┘
 | **V_mp** | **Membrane potential feature injection** | **0.400** |
 
 ## Repository Structure
-
-\`\`\`
 rgb_event_fusion/
-├── v5/
-│   ├── membrane_potential.py     # Core model: V_pos/V_neg accumulation + MAF
-│   ├── train_membrane_ultra.py   # Main training script (best result)
-│   ├── dsec_finetune_v2.py       # DSEC domain adaptation
-│   ├── dsec_eval.py              # Evaluation pipeline
-│   └── slam_full.py              # SLAM keypoint analysis
-├── v4/
-│   ├── model/                    # V4 Transformer-based fusion
-│   └── training/                 # V4 training scripts
-├── model/                        # V1–V3 base models
-├── scripts/                      # Data preparation tools
-├── utils/                        # Dataset, loss, metrics
-├── requirements.txt
-└── README.md
-\`\`\`
 
+├── v5/
+
+│   ├── membrane_potential.py     # Core model: V_pos/V_neg accumulation + MAF
+
+│   ├── train_membrane_ultra.py   # Main training script (best result)
+
+│   ├── dsec_finetune_v2.py       # DSEC domain adaptation
+
+│   ├── dsec_eval.py              # Evaluation pipeline
+
+│   └── slam_full.py              # SLAM keypoint analysis
+
+├── v4/
+
+│   ├── model/                    # V4 Transformer-based fusion
+
+│   └── training/                 # V4 training scripts
+
+├── model/                        # V1–V3 base models
+
+├── scripts/                      # Data preparation tools
+
+├── utils/                        # Dataset, loss, metrics
+
+├── requirements.txt
+
+└── README.md
 ## Usage
 
 ### Train V_mp (main model)
-\`\`\`bash
+```bash
 python v5/train_membrane_ultra.py \
     --data /path/to/carla/morning_new \
     --epochs 50 \
     --batch 16
-\`\`\`
+```
 
 ### Fine-tune on DSEC
-\`\`\`bash
+```bash
 python v5/dsec_finetune_v2.py \
     --weights runs/fusion_membrane_ultra/weights/best.pt \
     --dsec-root /path/to/dsec_detection \
     --seq zurich_city_04_a
-\`\`\`
+```
 
 ### Evaluate on DSEC
-\`\`\`bash
+```bash
 python v5/dsec_eval.py \
     --weights runs/fusion_membrane_ultra/weights/best.pt \
     --dsec-root /path/to/dsec_detection
-\`\`\`
+```
 
 ## Key Technical Notes
 
-- **Custom detection loss is broken**: \`pred_cls[:,:NC]\` channel mismatch invalidates V4/V5 feature-loss variants. Only ultralytics official loss gives valid mAP.
-- **DSEC GT label space**: Labels are in event camera space (640×480). Alignment uses \`W_evt/W_rgb\` scaling ratio, NOT rectify_map remapping.
+- **Custom detection loss is broken**: `pred_cls[:,:NC]` channel mismatch invalidates V4/V5 feature-loss variants. Only ultralytics official loss gives valid mAP.
+- **DSEC GT label space**: Labels are in event camera space (640×480). Alignment uses `W_evt/W_rgb` scaling ratio, NOT rectify_map remapping.
 - **DSEC "night" ≠ true darkness**: Luminance 76–103, closer to dusk. True extreme darkness tested via CARLA synthetic degradation.
 - **Sim-to-real gap**: CARLA DVS (frame-differencing) ≠ real DVS hardware — fusion effects are significantly stronger on real DSEC data.
 
 ## Citation
 
-\`\`\`bibtex
+```bibtex
 @misc{hsu2025rgbevent,
   author = {Hsu, Tzu-Fang and Lim, Zhi-Xuan and Hsieh, Chia-Yu},
   title  = {RGB--Event Camera Feature-Level Fusion for Nighttime Autonomous Driving Perception},
   year   = {2025},
   school = {National Taiwan University},
 }
-\`\`\`
+```
 
 ## License
 MIT License
