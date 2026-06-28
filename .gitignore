@@ -1,0 +1,35 @@
+# Data
+*.h5
+*.hdf5
+*.npy
+*.npz
+*.bag
+*.pcd
+*.bin
+fusion_yolo_v5/
+/data/
+/datasets/
+/media/
+
+# Model weights
+*.pt
+*.pth
+*.ckpt
+runs/
+weights/
+checkpoints/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.log
+.env
+venv/
+
+# Output
+*.mp4
+*.avi
+*.png
+outputs/
+results/
